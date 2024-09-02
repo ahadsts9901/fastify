@@ -28,7 +28,7 @@ app.register(usersRoutes, { prefix: '/api' })
 app.register(chatRoutes, { prefix: '/api' })
 
 // socket io
-const server = createServer(app.server)
+const server = createServer(app)
 
 const io = new socketIo(server, { cors: { origin: allowedOrigins, methods: "*" } })
 
@@ -38,4 +38,4 @@ io.on("connection", (socket) => console.log(`new client connected with id: ${soc
 
 const PORT = process.env.PORT || 5002
 
-app.listen({ port: PORT }, () => console.log(`server running on port ${PORT}`))
+server.listen({ port: PORT }, () => console.log(`server running on port ${PORT}`))
