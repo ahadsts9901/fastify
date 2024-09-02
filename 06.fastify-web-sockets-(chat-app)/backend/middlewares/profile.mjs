@@ -1,44 +1,52 @@
 import "dotenv/config"
 import { isValidObjectId } from "mongoose"
 import { userModel } from "../models/index.mjs"
+import { errorMessages } from "../utils/errorMessages.mjs"
 
 export const getCurrentUserProfileMiddleware = async (req, res) => {
 
     try {
 
-        const { currentUser } = req
+        const userId = req?.currentUser?._id
 
-        if (!currentUser) {
-            return res.status(401).send({
-                message: "unauthorized",
+        if (!userId || userId?.trim() === "") {
+            return res.status(400).send({
+                message: errorMessages?.idIsMissing
             })
         }
 
-        const { _id } = currentUser
-
-        if (!_id || !isValidObjectId(_id)) {
-            return res.status(401).send({
-                message: "unauthorized",
+        if (!isValidObjectId(userId)) {
+            return res.status(400).send({
+                message: errorMessages?.invalidId
             })
         }
 
-        const user = await userModel.findById(_id).exec()
+        const user = await userModel?.findById(userId).exec()
 
         if (!user) {
-            return res.status(404).send({
-                message: "account not found",
+            return res.status(400).send({
+                message: errorMessages?.userNotFound
             })
         }
 
-        return res.send({
+        const data = {
+            userName: user?.userName,
+            email: user?.email,
+            profilePhoto: user?.profilePhoto,
+            createdOn: user?.profilePhoto,
+            isActive: user?.isActive,
+            _id: user?._id
+        }
+
+        res.send({
             message: "profile fetched",
-            data: user
+            data: data
         })
 
     } catch (error) {
         console.error(error)
-        return res.status(500).send({
-            message: "internal server error",
+        res.status(500).send({
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
@@ -51,36 +59,44 @@ export const getUserProfileMiddleware = async (req, res) => {
 
         const { userId } = req?.params
 
-        if (!userId) {
-            return res.status(401).send({
-                message: "unauthorized",
+        if (!userId || userId?.trim() === "") {
+            return res.status(400).send({
+                message: errorMessages?.idIsMissing
             })
         }
-
 
         if (!isValidObjectId(userId)) {
-            return res.status(401).send({
-                message: "unauthorized",
+            return res.status(400).send({
+                message: errorMessages?.invalidId
             })
         }
 
-        const user = await userModel.findById(userId).exec()
+        const user = await userModel?.findById(userId).exec()
 
         if (!user) {
-            return res.status(404).send({
-                message: "account not found",
+            return res.status(400).send({
+                message: errorMessages?.userNotFound
             })
         }
 
-        return res.send({
+        const data = {
+            userName: user?.userName,
+            email: user?.email,
+            profilePhoto: user?.profilePhoto,
+            createdOn: user?.profilePhoto,
+            isActive: user?.isActive,
+            _id: user?._id
+        }
+
+        res.send({
             message: "profile fetched",
-            data: user
+            data: data
         })
 
     } catch (error) {
         console.error(error)
-        return res.status(500).send({
-            message: "internal server error",
+        res.status(500).send({
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
@@ -91,16 +107,16 @@ export const logoutMiddleware = async (req, res) => {
 
     try {
 
-        res.clearCookie('hart')
+        res.clearCookie("hart")
 
-        return res.send({
-            message: "logout successfull",
+        res.send({
+            message: "logout successfull"
         })
 
     } catch (error) {
         console.error(error)
-        res.status(500).send({
-            message: "internal server error",
+        return res.status(500).send({
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }

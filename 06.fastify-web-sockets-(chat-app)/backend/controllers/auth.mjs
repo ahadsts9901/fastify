@@ -1,4 +1,4 @@
-import { issueJWTToken, googleLoginMiddleware } from "../middlewares/index.mjs"
+import { issueJWTTokenMiddleware, googleLoginMiddleware } from "../middlewares/index.mjs"
 import { errorMessages } from "../utils/errorMessages.mjs"
 
 export const googleLoginController = async (req, res) => {
@@ -6,7 +6,7 @@ export const googleLoginController = async (req, res) => {
     try {
 
         await googleLoginMiddleware(req, res)
-        await issueJWTToken(req, res)
+        await issueJWTTokenMiddleware(req, res)
         res.send({ message: "signup successfull", data: req?.tokenPayload })
 
     } catch (error) {

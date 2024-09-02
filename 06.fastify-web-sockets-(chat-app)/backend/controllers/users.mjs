@@ -1,4 +1,4 @@
-import { getAllUsersMiddleware } from "../middlewares/index.mjs"
+import { getAllUsersMiddleware, authMiddleware } from "../middlewares/index.mjs"
 import { errorMessages } from "../utils/errorMessages.mjs"
 
 export const getAllUsersController = async (req, res) => {

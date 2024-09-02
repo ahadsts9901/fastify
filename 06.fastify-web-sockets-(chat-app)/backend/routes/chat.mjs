@@ -2,11 +2,11 @@ import { deleteMessageController, getMessagesController, sendMessageController }
 
 async function chatRoutes(fastify, options) {
 
-    fastify.get('/v1/chats/:userId', getMessagesController)
+    fastify.get('/v1/messages/:userId', getMessagesController)
 
-    fastify.post('/v1/chats', sendMessageController)
+    fastify.post('/v1/message', sendMessageController)
 
-    fastify.delete('/v1/chats/:messageId', deleteMessageController)
+    fastify.delete('/v1/message/:messageId', deleteMessageController)
 
 }
 

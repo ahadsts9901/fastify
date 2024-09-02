@@ -1,21 +1,63 @@
 import { isValidObjectId } from "mongoose"
 import { chatModel } from "../models/index.mjs"
+import { errorMessages } from "../utils/errorMessages.mjs"
+import { globalIoObject } from "../utils/core.mjs"
 
 export const getChatsMiddleware = async (req, res) => {
 
+    const from_id = req?.currentUser?._id
+    const to_id = req?.params?.userId
+
+    if (!from_id || from_id?.trim === "") {
+        return res.status(400).send({
+            message: errorMessages?.unAuthError
+        })
+    }
+
+    if (!isValidObjectId(from_id)) {
+        return res.status(400).send({
+            message: errorMessages?.unAuthError
+        })
+    }
+
+    if (!to_id || to_id?.trim === "") {
+        return res.status(400).send({
+            message: errorMessages?.idIsMissing
+        })
+    }
+
+    if (!isValidObjectId(to_id)) {
+        return res.status(400).send({
+            message: errorMessages?.invalidId
+        })
+    }
+
     try {
 
-        const posts = await postModel.find({}).exec()
+        const pipeline = {
+            $or: [
+                {
+                    to_id: to_id,
+                    from_id: from_id,
+                },
+                {
+                    to_id: from_id,
+                    from_id: to_id,
+                }
+            ]
+        }
 
-        return res.send({
-            message: "posts fetched",
-            data: posts
+        const messages = await chatModel.find(pipeline).sort({ _id: -1 }).exec()
+
+        res.send({
+            message: "messages fetched",
+            data: messages
         })
 
     } catch (error) {
         console.error(error)
         return res.status(500).send({
-            message: "internal server error",
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
@@ -24,36 +66,71 @@ export const getChatsMiddleware = async (req, res) => {
 
 export const createChatMiddleware = async (req, res) => {
 
+    const { _id } = req?.currentUser
+    const { to_id, text } = req?.body
+
+    if (!_id || _id?.trim === "") {
+        return res.status(400).send({
+            message: errorMessages?.unAuthError
+        })
+    }
+
+    if (!isValidObjectId(_id)) {
+        return res.status(400).send({
+            message: errorMessages?.unAuthError
+        })
+    }
+
+    if (!to_id || to_id?.trim === "") {
+        return res.status(400).send({
+            message: errorMessages?.idIsMissing
+        })
+    }
+
+    if (!isValidObjectId(to_id)) {
+        return res.status(400).send({
+            message: errorMessages?.invalidId
+        })
+    }
+
+    if (!text || text?.trim() === "") {
+        return res.status(400).send({
+            message: errorMessages?.messageRequired
+        })
+    }
+
     try {
 
-        const text = req?.body?.text
-        const title = req?.body?.title
-
-        if (!text || text?.trim() === "") {
-            return res.status(400).send({
-                message: "text is required"
-            })
+        const message = {
+            from_id: _id,
+            to_id: to_id,
+            text: text,
         }
 
-        if (!title || title?.trim() === "") {
-            return res.status(400).send({
-                message: "title is required"
-            })
+        const resp = await chatModel.create(message)
+
+        const messageToEmit = {
+            ...message,
+            _id: resp?._id,
+            createdOn: resp?.createdOn
         }
 
-        const resp = await postModel.create({
-            title, text,
-            authorId: req?.currentUser?._id
-        })
+        if (globalIoObject?.io) {
 
-        return res.send({
-            message: "post added",
+            console.log(`emitting message to ${to_id}`)
+            globalIoObject?.io?.emit(`chat-message-${to_id}`, messageToEmit)
+
+        }
+
+        res.send({
+            message: "message sent",
+            data: messageToEmit
         })
 
     } catch (error) {
         console.error(error)
-        res.status(500).send({
-            message: "internal server error",
+        return res.status(500).send({
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
@@ -62,40 +139,53 @@ export const createChatMiddleware = async (req, res) => {
 
 export const deleteChatMiddleware = async (req, res) => {
 
+    const { messageId } = req?.params
+
+    if (!messageId || messageId?.trim === "") {
+        return res.status(400).send({
+            message: errorMessages?.idIsMissing
+        })
+    }
+
+    if (!isValidObjectId(messageId)) {
+        return res.status(400).send({
+            message: errorMessages?.invalidId
+        })
+    }
+
     try {
 
-        const postId = req?.params?.postId
+        const message = await chatModel.findById(messageId)
 
-        if (!postId) {
-            return res.status(400).send({
-                message: "postId is required"
+        if (!message) {
+            return res.status(404).send({
+                message: errorMessages?.messageNotFound
             })
         }
 
-        if (!isValidObjectId(postId)) {
-            return res.status(400).send({
-                message: "postId is invalid"
-            });
+        if (message?.from_id != req?.currentUser?._id) {
+            return res.status(401).send({
+                message: errorMessages?.unAuthError
+            })
         }
 
-        const post = await postModel.findById(postId).exec()
+        const deleteResponse = await chatModel.findByIdAndDelete(messageId)
 
-        if (!post) {
-            return res.status(404).send({
-                message: "post not found"
-            });
+        if (globalIoObject?.io) {
+
+            console.log(`emitting message to ${deleteResponse?.to_id}`)
+            globalIoObject?.io?.emit(`delete-chat-message-${deleteResponse?.to_id}`, { deletedMessageId: deleteResponse?._id })
+
         }
 
-        const resp = await postModel.findByIdAndDelete(postId)
-
-        return res.send({
-            message: "post deleted",
+        res.send({
+            message: "messages deleted",
         })
 
     } catch (error) {
         console.error(error)
-        res.status(500).send({
-            message: "internal server error",
+        return res.status(500).send({
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }

@@ -1,34 +1,32 @@
 import "dotenv/config"
 import jwt from "jsonwebtoken"
-import { sessionInDays } from "../core.mjs"
+import { sessionInDays } from "../utils/core.mjs"
+import { errorMessages } from "../utils/errorMessages.mjs"
 
 export const issueJWTTokenMiddleware = async (req, res, next) => {
 
     try {
 
-        const { tokenPayload } = req
+        const { loginTokenPayload } = req
 
-        if (!tokenPayload) {
-            return res.status(500).send({
-                message: "internal server error",
-                error: "token payload not provided"
+        if (!loginTokenPayload) {
+            return res.status(400).send({
+                message: errorMessages.noTokenPayload
             })
         }
 
-        const hart = jwt.sign(tokenPayload, process.env.JWT_KEY, {
-            expiresIn: `${sessionInDays}d`
-        })
+        const hart = jwt?.sign(loginTokenPayload, process.env.JWT_KEY, { expiresIn: `${sessionInDays}d` })
 
         res.cookie('hart', hart, {
             httpOnly: true,
             secure: true,
             expires: new Date(Date.now() + sessionInDays * 24 * 60 * 60 * 1000)
-        })
+        });
 
     } catch (error) {
         console.error(error)
         res.status(500).send({
-            message: "internal server error",
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
@@ -39,22 +37,28 @@ export const authMiddleware = async (req, res, next) => {
 
     try {
 
-        const { hart } = req.cookies
+        const { hart } = req?.cookies
 
-        if (!hart || hart?.trim() === "") {
+        if (!hart) {
             return res.status(401).send({
-                message: "unauthorized"
+                message: errorMessages?.unAuthError
             })
         }
 
-        const currentUser = jwt.verify(hart, process.env.JWT_KEY)
+        const currentUser = jwt?.verify(hart, process.env.JWT_KEY)
+
+        if (!currentUser) {
+            return res.status(401).send({
+                message: errorMessages?.unAuthError
+            })
+        }
 
         req.currentUser = currentUser
 
     } catch (error) {
         console.error(error)
         res.status(500).send({
-            message: "internal server error",
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }

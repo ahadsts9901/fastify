@@ -1,57 +1,66 @@
 import "dotenv/config"
 import { userModel } from "../models/index.mjs"
+import { errorMessages } from "../utils/errorMessages.mjs"
+import { googleUserApi } from "../utils/core.mjs"
+import axios from "axios"
 
 export const googleLoginMiddleware = async (req, res, next) => {
 
+    const { accessToken } = req?.body
+
+    if (!accessToken || accessToken?.trim() === "") {
+        return res.status(400).send({
+            message: errorMessages?.noAccessToken
+        })
+    }
+
     try {
 
-        const { password, email } = req?.body
+        const googleUser = await axios.get(googleUserApi, { headers: { Authorization: accessToken }, });
 
-        if (!password || password?.trim() === "") {
-            return res.status(400).send({
-                message: "password is required"
-            })
-        }
-
-        if (!email || email?.trim() === "") {
-            return res.status(400).send({
-                message: "email is required"
-            })
-        }
-
-        if (!emailPattern.test(email?.trim()?.toLowerCase())) {
-            return res.status(401).send({
-                message: "email or password incorrect"
-            })
-        }
-
-        const user = await userModel.findOne({ email: email?.toLowerCase() }).exec()
+        const user = await userModel?.findOne({ email: googleUser?.data?.email }).exec()
 
         if (!user) {
-            return res.status(401).send({
-                message: "email or password incorrect"
-            })
-        }
 
-        const isPasswordTrue = await bcrypt.compare(password, user?.password)
+            const userPayload = {
+                userName: googleUser?.data?.name,
+                email: googleUser?.data?.email?.toLowerCase(),
+                profilePhoto: googleUser?.data?.picture,
+                isEmailVerified: true,
+            }
 
-        if (!isPasswordTrue) {
-            return res.status(401).send({
-                message: "email or password incorrect"
-            })
-        }
+            const signupResp = await userModel?.create(userPayload)
 
-        req.tokenPayload = {
-            userName: user?.userName,
-            email: user?.email,
-            createdOn: user?.createdOn,
-            _id: user?._id
+            const tokenPayload = {
+                _id: signupResp?._id,
+                userName: signupResp?.userName,
+                email: signupResp?.email,
+                createdOn: signupResp?.createdOn,
+                isAdmin: signupResp?.isAdmin,
+                profilePhoto: signupResp?.profilePhoto
+            }
+
+            req.loginTokenPayload = tokenPayload
+
+        } else if (user) {
+
+            const tokenPayload = {
+                _id: user?._id,
+                userName: user?.userName,
+                email: user?.email,
+                createdOn: user?.createdOn,
+                isAdmin: user?.isAdmin,
+                profilePhoto: user?.profilePhoto
+            }
+
+            req.loginTokenPayload = tokenPayload
+
         }
 
     } catch (error) {
         console.error(error)
         res.status(500).send({
-            message: "internal server error",
+            message: errorMessages?.serverError,
             error: error?.message
         })
     }
