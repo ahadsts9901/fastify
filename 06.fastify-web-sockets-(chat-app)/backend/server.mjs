@@ -14,6 +14,7 @@ const app = fastify()
 app.register(fastifyCors, {
     origin: allowedOrigins,
     credentials: true,
+    methods: "*"
 });
 
 // cookie parser
@@ -28,7 +29,7 @@ app.register(usersRoutes, { prefix: '/api' })
 app.register(chatRoutes, { prefix: '/api' })
 
 // socket io
-const server = createServer(app)
+const server = createServer(app.server)
 
 const io = new socketIo(server, { cors: { origin: allowedOrigins, methods: "*" } })
 
