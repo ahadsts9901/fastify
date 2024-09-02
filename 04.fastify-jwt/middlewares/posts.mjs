@@ -41,7 +41,10 @@ export const createPostMiddleware = async (req, res) => {
             })
         }
 
-        const resp = await postModel.create({ title, text })
+        const resp = await postModel.create({
+            title, text,
+            authorId: req?.currentUser?._id
+        })
 
         return res.send({
             message: "post added",

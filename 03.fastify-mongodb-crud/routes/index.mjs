@@ -1,7 +1,5 @@
 import { createPostMiddleware, deletePostMiddleware, getPostsMiddleware, updatePostMiddleware } from "../middlewares/posts.mjs"
 
-var posts = []
-
 async function postRoutes(fastify, options) {
 
     fastify.get('/v1/posts', getPostsMiddleware)

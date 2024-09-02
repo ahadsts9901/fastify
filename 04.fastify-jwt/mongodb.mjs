@@ -5,7 +5,7 @@ const uri = process.env.MONGO_URI
 
 async function run() {
     try {
-        await mongoose.connect(uri, { dbName: 'fastify-crud-mongodb' })
+        await mongoose.connect(uri, { dbName: 'fastify-jwt' })
     } catch (err) {
         console.log("mongodb connection error", err);
         process.exit(1);
