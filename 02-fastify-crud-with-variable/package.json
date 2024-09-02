@@ -1,0 +1,16 @@
+{
+  "name": "02-fastify-crud-with-variable",
+  "version": "1.0.0",
+  "main": "server.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "fastify": "^4.28.1"
+  }
+}
