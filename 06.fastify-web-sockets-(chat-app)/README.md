@@ -13,11 +13,12 @@
 
 - Javascript
 - Nodejs
-- Expressjs
+- Fastify
 - Socket.io
 - Mongodb (Mongoose)
 - JWT
-- Morgan
+- Fastify Cookie
+- Fastify Cors
 
 ## Frontend
 
