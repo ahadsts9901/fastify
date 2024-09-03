@@ -1,42 +1,44 @@
-import "./utils/mongodb.mjs"
-import fastify from "fastify"
-import fastifyCookie from "@fastify/cookie"
+import "./utils/mongodb.mjs";
+import fastify from "fastify";
+import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
-import { createServer } from "http"
-import { Server as socketIo } from "socket.io"
+import fastifySocket from "fastify-socket.io";
 
-import { chatRoutes, usersRoutes, authRoutes, profileRoutes } from "./routes/index.mjs"
-import { allowedOrigins, globalIoObject } from "./utils/core.mjs";
+import { chatRoutes, usersRoutes, authRoutes, profileRoutes } from "./routes/index.mjs";
+import { corsOptions, globalIoObject } from "./utils/core.mjs";
 
-const app = fastify()
+const app = fastify();
 
 // cors
-app.register(fastifyCors, {
-    origin: allowedOrigins,
-    credentials: true,
-    methods: "*"
-});
+app.register(fastifyCors, corsOptions)
+
+// fastify socket.io
+app.register(fastifySocket, { cors: corsOptions })
 
 // cookie parser
-app.register(fastifyCookie)
+app.register(fastifyCookie);
 
 // un-authenticated routes
-app.register(authRoutes, { prefix: '/api' })
+app.register(authRoutes, { prefix: "/api" });
 
 // authenticated routes
-app.register(profileRoutes, { prefix: '/api' })
-app.register(usersRoutes, { prefix: '/api' })
-app.register(chatRoutes, { prefix: '/api' })
+app.register(profileRoutes, { prefix: "/api" });
+app.register(usersRoutes, { prefix: "/api" });
+app.register(chatRoutes, { prefix: "/api" });
 
-// socket io
-const server = createServer(app.server)
+// access the socket.io instance via the fastify-socket.io plugin
+app.ready((err) => {
 
-const io = new socketIo(server, { cors: { origin: allowedOrigins, methods: "*" } })
+    if (err) throw err;
 
-globalIoObject.io = io
+    const io = app.io;
+    globalIoObject.io = io;
 
-io.on("connection", (socket) => console.log(`new client connected with id: ${socket?.id}`))
+    io.on("connection", (socket) => console.log(`new client connected with id: ${socket.id}`))
 
-const PORT = process.env.PORT || 5002
+});
 
-server.listen({ port: PORT }, () => console.log(`server running on port ${PORT}`))
+// start the server
+const PORT = process.env.PORT || 5002;
+
+app.listen({ port: PORT }, () => console.log(`server running on port ${PORT}`))

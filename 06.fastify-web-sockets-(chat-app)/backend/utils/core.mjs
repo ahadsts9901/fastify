@@ -15,3 +15,9 @@ export const googleUserApi = "https://www.googleapis.com/oauth2/v3/userinfo"
 export const allowedOrigins = "http://localhost:5173"
 
 export let globalIoObject = { io: null }
+
+export const corsOptions = {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+}
